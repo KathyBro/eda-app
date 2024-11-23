@@ -21,6 +21,12 @@ class Lesson(BaseModel):
     name: str
     id: str = Field(default_factory=lambda: str(uuid4()))
 
+    def __init__(self, days, start, end, name):
+        self.days = days
+        self.start = start
+        self.end = end
+        self.name = name
+
     @model_validator(mode="after")
     def check_overlap(cls, value: "Lesson"):
         start = value.start
@@ -49,6 +55,10 @@ class RoomSchedule(BaseModel):
             for day in Day
         }
 
+    def __init__(self, name: str, lessons: list[Lesson]):
+        self.name = name
+        self.lessons = lessons
+
     def add_lesson(self, lesson: Lesson):
         # TODO: Check if the lesson is overlapping
         for existing_lesson in self.lessons:
@@ -75,6 +85,9 @@ class RoomSchedule(BaseModel):
 
 class Schedule(BaseModel):
     rooms: list[RoomSchedule]
+
+    def __init__(self, rooms: list[RoomSchedule]):
+        self.rooms = rooms
 
     def add_room(self, room: RoomSchedule):
         for existing_room in self.rooms:
