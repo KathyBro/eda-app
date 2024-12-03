@@ -45,7 +45,9 @@ def edit_schedule(ctx: click.Context, name: str, directory: str | None):
             yaml.safe_dump(schedule_dict, f)
 
 
-@edit_schedule.command("create-room")
+@edit_schedule.command(
+    "create-room"
+)  # python -m cli schedule edit "Schedule Name" create-room "Room Name"
 @click.argument("name", type=click.STRING)
 @click.pass_context
 def add_room(ctx: click.Context, name: str):
@@ -53,6 +55,12 @@ def add_room(ctx: click.Context, name: str):
     Adds a room to the schedule
     """
     _schedule: Schedule = ctx.obj.get("schedule")
+
+    if name.strip() == "":
+        raise click.ClickException(
+            "Schedule name cannot be empty or only contain spaces."
+        )
+
     room = RoomSchedule(name=name)
     try:
         _schedule.add_room(room)
@@ -60,7 +68,9 @@ def add_room(ctx: click.Context, name: str):
         raise click.ClickException(err)
 
 
-@edit_schedule.command("remove-room")
+@edit_schedule.command(
+    "remove-room"
+)  # python -m cli schedule edit "Schedule Name" remove-room "Room Name"
 @click.argument("room_name", type=click.STRING)
 @click.pass_context
 def remove_room(ctx: click.Context, room_name: str):
@@ -85,7 +95,9 @@ def remove_room(ctx: click.Context, room_name: str):
         raise click.ClickException(err)
 
 
-@edit_schedule.group("room")
+@edit_schedule.group(
+    "room"
+)  # python -m cli schedule edit "Schedule Name" room "Room Name" [OPTIONS]
 @click.argument("room_name", type=click.STRING)
 @click.pass_context
 def room_group(ctx: click.Context, room_name: str):
@@ -104,7 +116,9 @@ def room_group(ctx: click.Context, room_name: str):
     ctx.obj["room"] = existing_room
 
 
-@room_group.command("add-lesson")
+@room_group.command(
+    "add-lesson"
+)  # python -m cli schedule edit "Schedule Name" room "Room Name" add-lesson [OPTIONS]
 @click.option("-d", "--days", multiple=True, type=click.Choice(Day), required=True)
 @click.option("-s", "--start", type=click.DateTime(["%H:%M"]), required=True)
 @click.option("-e", "--end", type=click.DateTime(["%H:%M"]), required=True)
@@ -127,7 +141,9 @@ def add_lesson(
         raise click.ClickException(err)
 
 
-@room_group.command("remove-lesson")
+@room_group.command(
+    "remove-lesson"
+)  # python -m cli schedule edit "Schedule Name" room "Room Name" remove-lesson "Lesson Name"
 @click.argument("lesson_name", type=click.STRING)
 @click.pass_context
 def remove_lesson(ctx: click.Context, lesson_name: str):
@@ -152,7 +168,9 @@ def remove_lesson(ctx: click.Context, lesson_name: str):
         raise click.ClickException(err)
 
 
-@room_group.command("lesson")
+@room_group.command(
+    "lesson"
+)  # python -m cli schedule edit "Schedule Name" room "Room Name" lesson "Lesson Name"
 @click.argument("lesson_name", type=click.STRING)
 @click.option("-d", "--days", multiple=True, type=click.Choice(Day))
 @click.option("-s", "--start", type=click.DateTime(["%H:%M"]))
@@ -179,10 +197,23 @@ def edit_lesson(
     if existing_lesson is None:
         raise click.ClickException(f"Lesson with name {lesson_name!r} does not exist.")
     if days:
-        existing_lesson.days = days
-    if start:
-        existing_lesson.start = start.time()
-    if end:
-        existing_lesson.end = end.time()
+        existing_lesson.days = [day for day in days]
     if name:
         existing_lesson.name = name
+    start = None if start is None else start.time()
+    end = None if end is None else end.time()
+    if start and end:
+        if start > end:
+            raise click.ClickException(f"Start time must be before end time.")
+        elif start == end:
+            raise click.ClickException("Start and end times must be different.")
+        existing_lesson.start = start
+        existing_lesson.end = end
+    elif start:
+        if start > existing_lesson.end:
+            raise click.ClickException(f"Start time must be before end time.")
+        existing_lesson.start = start
+    elif end:
+        if end < existing_lesson.start:
+            raise click.ClickException("End time must be after start time.")
+        existing_lesson.end = end

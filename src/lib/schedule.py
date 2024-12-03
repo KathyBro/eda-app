@@ -19,15 +19,15 @@ class Lesson(BaseModel):
     start: time
     end: time
     name: str
-    id: str = Field(default_factory=lambda: str(uuid4()))
+    id: str = Field(default_factory=lambda: str(uuid4()), validate_default=True)
 
     @model_validator(mode="after")
-    def check_overlap(cls, value: "Lesson"):
-        start = value.start
-        end = value.end
+    def check_overlap(self):
+        start = self.start
+        end = self.end
         if start and end and start > end:
-            raise ValueError("Start date must be before end date.")
-        return value
+            raise ValueError("Start time must be before end time.")
+        return self
 
     def overlaps(self, other: "Lesson"):
         return (
