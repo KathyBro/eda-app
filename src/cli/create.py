@@ -6,7 +6,7 @@ from lib.schedule import Schedule
 from .app import schedule
 
 
-@schedule.command("create")
+@schedule.command("create")  # python -m cli schedule view "Name" -d "path/to/dir"
 @click.argument(
     "name",
     type=click.STRING,
@@ -33,6 +33,10 @@ def create_schedule(
     path = os.path.join(directory, f"{name}.yaml")
     if os.path.exists(path):
         raise click.ClickException(f"Schedule with name {name!r} already exists.")
+    if name.strip() == "":
+        raise click.ClickException(
+            "Schedule name cannot be empty or only contain spaces."
+        )
 
     with open(path, "w") as f:
         schedule_instance = Schedule(rooms=[])
