@@ -25,3 +25,4 @@ egg-info/
 coverage.xml
 .venv/
 .pytest_cache/
+*.yaml
