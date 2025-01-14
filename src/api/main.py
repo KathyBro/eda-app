@@ -7,7 +7,6 @@ from lib.schedule import Schedule, RoomSchedule, Lesson, Day
 from .models import NewSchedule, NewRoom, NewLesson, UpdateLesson, UpdateRoom
 from .dependencies import ScheduleManager, schedule_manager
 
-
 app = FastAPI()
 
 
