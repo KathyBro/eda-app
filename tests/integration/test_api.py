@@ -26,6 +26,16 @@ def create_room(api_client, schedule_id):
     return response
 
 
+def create_lesson(api_client, schedule_id, room_id):
+    request_body = NewLesson(
+        name="Test Lesson", days=[Day.MONDAY], start="12:00", end="13:00"
+    ).model_dump(mode="json")
+    response = api_client.post(
+        f"{__main_url__}{schedule_id}/rooms/{room_id}/lessons/", json=request_body
+    )
+    return response
+
+
 def test_root__when_making_get__returns_list_of_schedules(api_client):
     response = api_client.get(__main_url__)
     response_body = response.json()
@@ -40,6 +50,10 @@ def test_schedules__create_new_schedule__returns_new_schedule_with_empty_rooms(
     response = api_client.post(__main_url__, json=request_body)
     assert response.status_code == 201
     response_body = response.json()
+
+    # Delete schedule
+    schedule_id = response_body["id"]
+    api_client.delete(f"{__main_url__}{schedule_id}")
 
     assert "id" in response_body
     assert isinstance(response_body["id"], str)
@@ -56,6 +70,10 @@ def test_schedules__create_new_schedule__new_schedule_appears_in_list_of_schedul
     response = api_client.post(__main_url__, json=request_body)
     new_schedule_id = response.json()["id"]
     response = api_client.get(__main_url__)
+
+    # Delete schedule
+    api_client.delete(f"{__main_url__}{new_schedule_id}")
+
     assert any(obj.get("id") == new_schedule_id for obj in response.json())
 
 
@@ -79,8 +97,13 @@ def test_schedules__create_new_room__missing_lessons__returns_201_and_empty_less
     request_body = NewRoom(name="Test Room").model_dump(mode="json")
     schedule_id = create_schedule(api_client).json()["id"]
     response = api_client.post(f"{__main_url__}{schedule_id}/rooms/", json=request_body)
+
     assert response.status_code == 201
     response_body = response.json()
+
+    # Delete schedule
+    api_client.delete(f"{__main_url__}{schedule_id}")
+
     assert "id" in response_body
     assert isinstance(response_body["id"], str)
 
@@ -95,15 +118,23 @@ def test_schedules__create_new_room__missing_name__returns_422(api_client):
     request_body = '{"lessons": []}'
     schedule_id = create_schedule(api_client).json()["id"]
     response = api_client.post(f"{__main_url__}{schedule_id}/rooms/", json=request_body)
+
+    # Delete schedule
+    api_client.delete(f"{__main_url__}{schedule_id}")
+
     assert response.status_code == 422
 
 
-def test_schedules__create_new_room__room_exists__returns_200(api_client):
+def test_schedules__create_new_room__confirm_room_exists__returns_200(api_client):
     request_body = NewRoom(name="Test Room").model_dump(mode="json")
     schedule_id = create_schedule(api_client).json()["id"]
     response = api_client.post(f"{__main_url__}{schedule_id}/rooms/", json=request_body)
     room_id = response.json()["id"]
     response = api_client.get(f"{__main_url__}{schedule_id}/rooms/{room_id}/lessons")
+
+    # Delete schedule
+    api_client.delete(f"{__main_url__}{schedule_id}")
+
     assert response.status_code == 200
 
 
@@ -114,6 +145,10 @@ def test_schedules__create_new_lesson__missing_name__returns_422(api_client):
     response = api_client.post(
         f"{__main_url__}{schedule_id}/rooms/{room_id}/lessons/", json=request_body
     )
+
+    # Delete schedule
+    api_client.delete(f"{__main_url__}{schedule_id}")
+
     assert response.status_code == 422
 
 
@@ -124,6 +159,10 @@ def test_schedules__create_new_lesson__missing_day__returns_422(api_client):
     response = api_client.post(
         f"{__main_url__}{schedule_id}/rooms/{room_id}/lessons/", json=request_body
     )
+
+    # Delete schedule
+    api_client.delete(f"{__main_url__}{schedule_id}")
+
     assert response.status_code == 422
 
 
@@ -134,6 +173,10 @@ def test_schedules__create_new_lesson__missing_start__returns_422(api_client):
     response = api_client.post(
         f"{__main_url__}{schedule_id}/rooms/{room_id}/lessons/", json=request_body
     )
+
+    # Delete schedule
+    api_client.delete(f"{__main_url__}{schedule_id}")
+
     assert response.status_code == 422
 
 
@@ -144,6 +187,10 @@ def test_schedules__create_new_lesson__missing_end__returns_422(api_client):
     response = api_client.post(
         f"{__main_url__}{schedule_id}/rooms/{room_id}/lessons/", json=request_body
     )
+
+    # Delete schedule
+    api_client.delete(f"{__main_url__}{schedule_id}")
+
     assert response.status_code == 422
 
 
@@ -155,6 +202,10 @@ def test_schedules__create_new_lesson__missing_room__returns_400(api_client):
     response = api_client.post(
         f"{__main_url__}{schedule_id}/rooms/123/lessons/", json=request_body
     )
+
+    # Delete schedule
+    api_client.delete(f"{__main_url__}{schedule_id}")
+
     assert response.status_code == 400
 
 
@@ -168,6 +219,10 @@ def test_schedules__create_new_lesson__returns_new_lesson(api_client):
     response = api_client.post(
         f"{__main_url__}{schedule_id}/rooms/{room_id}/lessons/", json=request_body
     )
+
+    # Delete schedule
+    api_client.delete(f"{__main_url__}{schedule_id}")
+
     assert response.status_code == 201
 
 
@@ -183,4 +238,258 @@ def test_schedules__create_new_lesson__appears_in_list_of_lessons(api_client):
     )
     lesson_id = response.json()["id"]
     response = api_client.get(f"{__main_url__}{schedule_id}/rooms/{room_id}/lessons")
+
+    # Delete schedule
+    api_client.delete(f"{__main_url__}{schedule_id}")
+
     assert any(obj.get("id") == lesson_id for obj in response.json())
+
+
+def test_schedules__delete_schedule__returns_204(api_client):
+    schedule_id = create_schedule(api_client).json()["id"]
+    response = api_client.delete(f"{__main_url__}{schedule_id}")
+
+    assert response.status_code == 204
+
+
+def test_schedules__delete_nonexistant_schedule__returns_404(api_client):
+    response = api_client.delete(f"{__main_url__}123")
+
+    assert response.status_code == 404
+
+
+def test_schedules__delete_schedule__schedule_no_longer_exists(api_client):
+    schedule_id = create_schedule(api_client).json()["id"]
+    api_client.delete(f"{__main_url__}{schedule_id}")
+    response = api_client.get(f"{__main_url__}{schedule_id}")
+
+    assert response.status_code == 404
+
+
+def test_schedules__delete_room__returns_204(api_client):
+    schedule_id = create_schedule(api_client).json()["id"]
+    room_id = create_room(api_client, schedule_id).json()["id"]
+    response = api_client.delete(f"{__main_url__}{schedule_id}/rooms/{room_id}")
+
+    # Delete schedule
+    api_client.delete(f"{__main_url__}{schedule_id}")
+
+    assert response.status_code == 204
+
+
+def test_schedules__delete_nonexistant_room__returns_404(api_client):
+    schedule_id = create_schedule(api_client).json()["id"]
+    response = api_client.delete(f"{__main_url__}{schedule_id}/rooms/123")
+
+    # Delete schedule
+    api_client.delete(f"{__main_url__}{schedule_id}")
+
+    assert response.status_code == 404
+
+
+def test_schedules__delete_room__room_no_longer_exists(api_client):
+    schedule_id = create_schedule(api_client).json()["id"]
+    room_id = create_room(api_client, schedule_id).json()["id"]
+    api_client.delete(f"{__main_url__}{schedule_id}/rooms/{room_id}")
+    response = api_client.get(f"{__main_url__}{schedule_id}/rooms/{room_id}/lessons")
+
+    # Delete schedule
+    api_client.delete(f"{__main_url__}{schedule_id}")
+
+    assert response.status_code == 404
+
+
+def test_schedules__delete_lesson__returns_204(api_client):
+    schedule_id = create_schedule(api_client).json()["id"]
+    room_id = create_room(api_client, schedule_id).json()["id"]
+    lesson_id = create_lesson(api_client, schedule_id, room_id).json()["id"]
+    response = api_client.delete(
+        f"{__main_url__}{schedule_id}/rooms/{room_id}/lessons/{lesson_id}"
+    )
+
+    # Delete schedule
+    api_client.delete(f"{__main_url__}{schedule_id}")
+
+    assert response.status_code == 204
+
+
+def test_schedules__delete_nonexistant_lesson__returns_404(api_client):
+    schedule_id = create_schedule(api_client).json()["id"]
+    room_id = create_room(api_client, schedule_id).json()["id"]
+    response = api_client.delete(
+        f"{__main_url__}{schedule_id}/rooms/{room_id}/lessons/123"
+    )
+
+    # Delete schedule
+    api_client.delete(f"{__main_url__}{schedule_id}")
+
+    assert response.status_code == 404
+
+
+def test_schedules__delete_lesson__lesson_no_longer_exists(api_client):
+    schedule_id = create_schedule(api_client).json()["id"]
+    room_id = create_room(api_client, schedule_id).json()["id"]
+    lesson_id = create_lesson(api_client, schedule_id, room_id).json()["id"]
+    api_client.delete(
+        f"{__main_url__}{schedule_id}/rooms/{room_id}/lessons/{lesson_id}"
+    )
+    response = api_client.get(
+        f"{__main_url__}{schedule_id}/rooms/{room_id}/lessons/{lesson_id}"
+    )
+
+    # Delete schedule
+    api_client.delete(f"{__main_url__}{schedule_id}")
+
+    assert response.status_code == 404
+
+
+# UPDATE TESTS
+def test_schedules__update_schedule__returns_204(api_client):
+    schedule_id = create_schedule(api_client).json()["id"]
+    response = api_client.put(f"{__main_url__}{schedule_id}", json={"name": "New Name"})
+
+    # Delete schedule
+    api_client.delete(f"{__main_url__}{schedule_id}")
+
+    assert response.status_code == 204
+
+
+def test_schedules__update_nonexistant_schedule__returns_404(api_client):
+    response = api_client.put(f"{__main_url__}123", json={"name": "New Name"})
+
+    assert response.status_code == 404
+
+
+def test_schedules__update_room__returns_204(api_client):
+    schedule_id = create_schedule(api_client).json()["id"]
+    room_id = create_room(api_client, schedule_id).json()["id"]
+    response = api_client.put(
+        f"{__main_url__}{schedule_id}/rooms/{room_id}", json={"name": "New Name"}
+    )
+
+    # Delete schedule
+    api_client.delete(f"{__main_url__}{schedule_id}")
+
+    assert response.status_code == 204
+
+
+def test_schedules__update_nonexistant_room__returns_404(api_client):
+    schedule_id = create_schedule(api_client).json()["id"]
+    response = api_client.put(
+        f"{__main_url__}{schedule_id}/rooms/123", json={"name": "New Name"}
+    )
+
+    # Delete schedule
+    api_client.delete(f"{__main_url__}{schedule_id}")
+
+    assert response.status_code == 404
+
+
+def test_schedules__update_lesson_name__returns_204(api_client):
+    schedule_id = create_schedule(api_client).json()["id"]
+    room_id = create_room(api_client, schedule_id).json()["id"]
+    lesson_id = create_lesson(api_client, schedule_id, room_id).json()["id"]
+    response = api_client.put(
+        f"{__main_url__}{schedule_id}/rooms/{room_id}/lessons/{lesson_id}",
+        json={"name": "New Name"},
+    )
+
+    # Delete schedule
+    api_client.delete(f"{__main_url__}{schedule_id}")
+
+    assert response.status_code == 204
+
+
+def test_schedules__update_lesson_days__returns_204(api_client):
+    schedule_id = create_schedule(api_client).json()["id"]
+    room_id = create_room(api_client, schedule_id).json()["id"]
+    lesson_id = create_lesson(api_client, schedule_id, room_id).json()["id"]
+    response = api_client.put(
+        f"{__main_url__}{schedule_id}/rooms/{room_id}/lessons/{lesson_id}",
+        json={"days": ["monday", "tuesday"]},
+    )
+
+    # Delete schedule
+    api_client.delete(f"{__main_url__}{schedule_id}")
+
+    assert response.status_code == 204
+
+
+def test_schedules__update_lesson_start__returns_204(api_client):
+    schedule_id = create_schedule(api_client).json()["id"]
+    room_id = create_room(api_client, schedule_id).json()["id"]
+    lesson_id = create_lesson(api_client, schedule_id, room_id).json()["id"]
+    response = api_client.put(
+        f"{__main_url__}{schedule_id}/rooms/{room_id}/lessons/{lesson_id}",
+        json={"start": "06:00"},
+    )
+
+    # Delete schedule
+    api_client.delete(f"{__main_url__}{schedule_id}")
+
+    assert response.status_code == 204
+
+
+def test_schedules__update_lesson_end__returns_204(api_client):
+    schedule_id = create_schedule(api_client).json()["id"]
+    room_id = create_room(api_client, schedule_id).json()["id"]
+    lesson_id = create_lesson(api_client, schedule_id, room_id).json()["id"]
+    response = api_client.put(
+        f"{__main_url__}{schedule_id}/rooms/{room_id}/lessons/{lesson_id}",
+        json={"end": "15:00"},
+    )
+
+    # Delete schedule
+    api_client.delete(f"{__main_url__}{schedule_id}")
+
+    assert response.status_code == 204
+
+
+def test_schedules__update_start_and_end_time__returns_204(api_client):
+    schedule_id = create_schedule(api_client).json()["id"]
+    room_id = create_room(api_client, schedule_id).json()["id"]
+    lesson_id = create_lesson(api_client, schedule_id, room_id).json()["id"]
+    response = api_client.put(
+        f"{__main_url__}{schedule_id}/rooms/{room_id}/lessons/{lesson_id}",
+        json={"start": "06:00", "end": "15:00"},
+    )
+
+    # Delete schedule
+    api_client.delete(f"{__main_url__}{schedule_id}")
+
+    assert response.status_code == 204
+
+
+def test_schedules__update_time__get_shows_updated_time(api_client):
+    schedule_id = create_schedule(api_client).json()["id"]
+    room_id = create_room(api_client, schedule_id).json()["id"]
+    lesson_id = create_lesson(api_client, schedule_id, room_id).json()["id"]
+    response = api_client.put(
+        f"{__main_url__}{schedule_id}/rooms/{room_id}/lessons/{lesson_id}",
+        json={"start": "06:00", "end": "15:00"},
+    )
+
+    response = api_client.get(
+        f"{__main_url__}{schedule_id}/rooms/{room_id}/lessons/{lesson_id}"
+    )
+
+    # Delete schedule
+    api_client.delete(f"{__main_url__}{schedule_id}")
+
+    assert response.status_code == 200
+    assert response.json().get("end") == "15:00:00"
+    assert response.json().get("start") == "06:00:00"
+
+
+def test_schedules__update_nonexistant_lesson__returns_404(api_client):
+    schedule_id = create_schedule(api_client).json()["id"]
+    room_id = create_room(api_client, schedule_id).json()["id"]
+    response = api_client.put(
+        f"{__main_url__}{schedule_id}/rooms/{room_id}/lessons/123",
+        json={"name": "New Name"},
+    )
+
+    # Delete schedule
+    api_client.delete(f"{__main_url__}{schedule_id}")
+
+    assert response.status_code == 404

@@ -40,17 +40,18 @@ class ScheduleManager:
 
 
 class FileScheduleManager(ScheduleManager):
-    def __init__(self) -> None:
+    def __init__(self, filename: str = "schedule.json") -> None:
         super().__init__()
-        self.filename = "schedule.json"
+        self.filename = filename
         try:
             with open(self.filename, "r") as fp:
                 _cache: dict[str, dict] = json.load(fp)
         except:
             _cache = {}
-        self._cache.update(
-            {key: Schedule.model_validate(value) for key, value in _cache.items()}
-        )
+        if _cache != {}:
+            self._cache = {
+                key: Schedule.model_validate(value) for key, value in _cache.items()
+            }
 
     @contextmanager
     def session(self):
