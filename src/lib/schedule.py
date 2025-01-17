@@ -74,6 +74,7 @@ class RoomSchedule(BaseModel):
 
 
 class Schedule(BaseModel):
+    id: str = Field(default_factory=lambda: str(uuid4()))
     rooms: list[RoomSchedule]
 
     def add_room(self, room: RoomSchedule):
@@ -84,3 +85,9 @@ class Schedule(BaseModel):
 
     def remove_room(self, room_id: str):
         self.rooms = [room for room in self.rooms if room.id != room_id]
+
+    def validate(self):
+        """
+        MAKES SURE WE DONT DUPLICATE ROOMS AND EACH ROOMS SCHEDULE IS VALID IE> NO OVERLAPS
+        """
+        pass
